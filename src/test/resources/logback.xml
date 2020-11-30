@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="http://www.padual.com/java/logback.xsd"
+        debug="false" scan="true" scanPeriod="60 second">
+
+    <property name="PROJECT" value="gatewayHelper" />
+    <property name="ROOT" value="logs" />
+    <property name="FILESIZE" value="50MB" />
+    <property name="MAXHISTORY" value="100" />
+
+    <!-- 控制台打印 -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder charset="utf-8">
+            <pattern>[%-5level] %d{yyyy-MM-dd HH:mm:ss SSS} [%thread] %logger{36} - %m%n
+            </pattern>
+        </encoder>
+    </appender>
+    <!-- ERROR 输入到文件，按日期和文件大小 -->
+    <appender name="ifspFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder charset="utf-8">
+            <pattern>[%-5level] %d{yyyy-MM-dd HH:mm:ss SSS} [%thread] %logger{36} - %m%n
+            </pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>DEBUG</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${ROOT}/${PROJECT}.%d.%i.log</fileNamePattern>
+            <maxHistory>${MAXHISTORY}</maxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy
+                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${FILESIZE}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>
+
+
+
+    <appender name="atfFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder charset="utf-8">
+            <pattern>[%-5level] %d{yyyy-MM-dd HH:mm:ss SSS} [%thread] %logger{36} - %m%n
+            </pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>DEBUG</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${ROOT}/atf.%d.%i.log</fileNamePattern>
+            <maxHistory>${MAXHISTORY}</maxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy
+                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${FILESIZE}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>
+
+
+    <appender name="biz" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <prudent>true</prudent>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${HOME}/monitorLog/biz_%d{yyyy-MM-dd}_%i.log</fileNamePattern>
+            <maxHistory>14</maxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy
+                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>%m%n</Pattern>
+        </layout>
+    </appender>
+
+    <appender name="tech" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <prudent>true</prudent>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${HOME}/monitorLog/tech_%d{yyyy-MM-dd}_%i.log</fileNamePattern>
+            <maxHistory>14</maxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy
+                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>%m%n</Pattern>
+        </layout>
+    </appender>
+
+    <appender name="credit" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <prudent>true</prudent>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${HOME}/monitorLog/creditLimit_%d{yyyy-MM-dd}_%i.log</fileNamePattern>
+            <maxHistory>14</maxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy
+                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>%m%n</Pattern>
+        </layout>
+    </appender>
+
+    <logger name="creditLimit" level="INFO" additivity="true">
+        <appender-ref ref="credit"/>
+    </logger>
+
+    <logger name="bizLogger" level="INFO" additivity="true">
+        <appender-ref ref="biz"/>
+    </logger>
+
+    <logger name="techLogger" level="INFO" additivity="true">
+        <appender-ref ref="tech"/>
+    </logger>
+
+    <!-- SQL相关日志输出-->
+    <logger name="org.apache.ibatis" level="INFO" additivity="false" />
+    <logger name="org.mybatis.spring" level="INFO" additivity="false" />
+
+    <logger name="cn.bos.ifsp" level="INFO" additivity="false" >
+        <appender-ref ref="STDOUT" />
+    </logger>
+
+    <!-- Logger 根目录 -->
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>
