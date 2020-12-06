@@ -3,7 +3,7 @@ package com.wutj.tool.route.web;
 import com.wutj.tool.route.DefaultRouterTemplate;
 import com.wutj.tool.route.ITemplateClient;
 import com.wutj.tool.route.constant.EventMsgType;
-import com.wutj.tool.route.consumer.DefaultEventMessage;
+import com.wutj.tool.route.consumer.EventMessage;
 import com.wutj.tool.route.consumer.IMessageConsumer;
 import com.wutj.tool.route.model.BasicRouter;
 import org.slf4j.Logger;
@@ -19,7 +19,7 @@ public class MockReceiveMessageTest {
 	private static final Logger log = LoggerFactory.getLogger(MockReceiveMessageTest.class);
 
 	@Autowired
-	private IMessageConsumer<DefaultEventMessage> consumer;
+	private IMessageConsumer consumer;
 
 	@Autowired
 	private DefaultRouterTemplate template;
@@ -32,7 +32,7 @@ public class MockReceiveMessageTest {
 	 */
 	@PostMapping("/msg")
 	public void msg(){
-		DefaultEventMessage msg = new DefaultEventMessage();
+		EventMessage msg = new EventMessage();
 		msg.setMsgType(EventMsgType.DEFAULT);
 		msg.setEventInfo("11");
 		msg.setRouter(template.getRouter());

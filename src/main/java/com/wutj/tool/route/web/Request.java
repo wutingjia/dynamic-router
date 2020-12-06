@@ -3,6 +3,11 @@ package com.wutj.tool.route.web;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 请求报文.
+ *
+ * @author wutingjia
+ */
 public class Request {
 
 	/**

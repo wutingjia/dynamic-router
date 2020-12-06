@@ -1,7 +1,5 @@
 package com.wutj.tool.route.listener;
 
-import com.wutj.tool.route.RouterContext;
-
 /**
  * 监听器接口.
  *

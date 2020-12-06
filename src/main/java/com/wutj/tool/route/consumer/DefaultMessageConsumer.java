@@ -1,7 +1,6 @@
 package com.wutj.tool.route.consumer;
 
 import com.wutj.tool.route.constant.EventMsgType;
-import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -11,17 +10,17 @@ import java.util.concurrent.ArrayBlockingQueue;
  * @author wutingjia
  */
 
-public class DefaultMessageConsumer implements IMessageConsumer<DefaultEventMessage> {
+public class DefaultMessageConsumer implements IMessageConsumer {
 
-	private final IQueueContainer<EventMsgType> queueContainer;
+	private final IQueueContainer queueContainer;
 
-	public DefaultMessageConsumer(IQueueContainer<EventMsgType> queueContainer) {
+	public DefaultMessageConsumer(IQueueContainer queueContainer) {
 		this.queueContainer = queueContainer;
 	}
 
 	@Override
-	public void consume(DefaultEventMessage msg) {
-		ArrayBlockingQueue<IEventMessage<EventMsgType>> queue = queueContainer.getQueueByType(msg.getMsgType());
+	public void consume(EventMessage msg) {
+		ArrayBlockingQueue<EventMessage> queue = queueContainer.getQueueByType(msg.getMsgType());
 		queue.add(msg);
 	}
 }

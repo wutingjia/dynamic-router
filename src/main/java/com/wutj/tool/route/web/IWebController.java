@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 public interface IWebController {
 
 	/**
-	 * 强制修改路由
+	 * 强制修改当前路由
 	 * @param request 请求报文
-	 * @return true 修改成功;false修改失败
+	 * @return true 修改成功
 	 */
 	@PostMapping("/router/modify")
 	boolean modifyRouter(@RequestBody Request request);
@@ -27,6 +27,11 @@ public interface IWebController {
 	@PostMapping("/router/unlock")
 	boolean unlockTemplate();
 
+    /**
+     * 重置某些decider的候选路由
+     * @param request 请求报文
+     * @return true 修改成功
+     */
 	@PostMapping("/router/setRouters")
 	boolean setRouters(@RequestBody Request request);
 }

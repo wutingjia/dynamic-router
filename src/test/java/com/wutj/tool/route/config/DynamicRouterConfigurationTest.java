@@ -1,8 +1,8 @@
 package com.wutj.tool.route.config;
 
-import com.wutj.tool.route.AbstractDecider;
-import com.wutj.tool.route.DecidersHolder;
-import com.wutj.tool.route.RouterContext;
+import com.wutj.tool.route.decider.AbstractDecider;
+import com.wutj.tool.route.decider.DecidersHolder;
+import com.wutj.tool.route.listener.RouterContext;
 import com.wutj.tool.route.constant.EventMsgType;
 import com.wutj.tool.route.consumer.IQueueContainer;
 import com.wutj.tool.route.decider.MyDecider;
@@ -31,11 +31,11 @@ public class DynamicRouterConfigurationTest {
 	private static final Logger log = LoggerFactory.getLogger(DynamicRouterConfigurationTest.class);
 
 	@Autowired
-	IQueueContainer<EventMsgType> container;
+	private IQueueContainer container;
 
 	@Bean
 	public MyDecider decider() {
-		MyDecider decider = new MyDecider(EventMsgType.DEFAULT, container);
+		MyDecider decider = new MyDecider("decider1", EventMsgType.DEFAULT, container);
 
 		decider.setStrategy(RouterStrategy.LINEAR);
 		decider.setListeners(new ArrayList<IDeciderListener>(){{add(deciderListener());}});
@@ -51,8 +51,8 @@ public class DynamicRouterConfigurationTest {
 	}
 
 	@Bean
-	public DecidersHolder<EventMsgType> holder() {
-		return () -> new LinkedList<AbstractDecider<EventMsgType>>(){{add(decider());}};
+	public DecidersHolder holder() {
+		return () -> new LinkedList<AbstractDecider>(){{add(decider());}};
 	}
 
 	@Bean

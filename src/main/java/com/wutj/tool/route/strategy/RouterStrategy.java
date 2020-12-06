@@ -1,6 +1,6 @@
 package com.wutj.tool.route.strategy;
 
-import com.wutj.tool.route.IDecider;
+import com.wutj.tool.route.decider.IDecider;
 
 /**
  * 路由策略,{@link IDecider}使用.

@@ -1,32 +1,33 @@
 package com.wutj.tool.route;
 
 import com.wutj.tool.route.constant.DRParam;
-import com.wutj.tool.route.constant.EventMsgType;
-import com.wutj.tool.route.consumer.IEventMessage;
 import com.wutj.tool.route.model.IRouter;
 import com.wutj.tool.route.recovery.IRecoveryTaskHandler;
+import com.wutj.tool.route.recovery.RecoveryTask;
 import com.wutj.tool.route.recovery.TaskType;
 import com.wutj.tool.route.strategy.RecoveryIntervalStrategy;
 import com.wutj.tool.route.strategy.RecoveryStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.util.StringUtils;
 
-import java.util.*;
+import javax.annotation.PostConstruct;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.DelayQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 路由配置模板.
+ * 路由配置模板，单例
  *
  * @author wutingjia
  */
-public class DefaultRouterTemplate implements IRouterTemplate<IEventMessage<EventMsgType>, IRouter>, InitializingBean {
+public class DefaultRouterTemplate implements IRouterTemplate, InitializingBean {
 
 	private static final Logger log = LoggerFactory.getLogger(DefaultRouterTemplate.class);
 
 	/**
-	 * 默认路由
+	 * 默认路由,也是初始路由
 	 */
 	private IRouter defaultRouter;
 
@@ -39,11 +40,6 @@ public class DefaultRouterTemplate implements IRouterTemplate<IEventMessage<Even
 	 * 上一次路由
 	 */
 	private IRouter previousRouter;
-
-	/**
-	 * 该模板名字
-	 */
-	private String name;
 
 	/**
 	 * 路由恢复策略
@@ -63,25 +59,22 @@ public class DefaultRouterTemplate implements IRouterTemplate<IEventMessage<Even
 	/**
 	 * 恢复任务执行器
 	 */
-	private final IRecoveryTaskHandler<EventMsgType> recoveryTaskHandler;
+	private final IRecoveryTaskHandler recoveryTaskHandler;
 
 	/**
 	 * 是否被锁定，如果被锁定则在此期间路由无法被修改
 	 */
 	private final AtomicBoolean lock = new AtomicBoolean(false);
 
-	public DefaultRouterTemplate(String name, IRecoveryTaskHandler<EventMsgType> recoveryTaskHandler) {
-		this.name = name;
+    /**
+     * 恢复任务队列
+     */
+    private final DelayQueue<RecoveryTask> queue;
+
+	public DefaultRouterTemplate(IRecoveryTaskHandler recoveryTaskHandler, DelayQueue<RecoveryTask> queue) {
 		this.recoveryTaskHandler = recoveryTaskHandler;
-	}
-
-	public String getName() {
-		return StringUtils.isEmpty(name) ? "default" : name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
+        this.queue = queue;
+    }
 
 	public IRouter getRouter() {
 		return this.router;
@@ -89,6 +82,9 @@ public class DefaultRouterTemplate implements IRouterTemplate<IEventMessage<Even
 
 	@Override
 	public void setRouter(IRouter router) {
+	    if (this.lock.get()) {
+	        log.warn("模板已上锁无法修改路由");
+        }
 		this.previousRouter = this.router;
 		this.router = router;
 	}
@@ -109,12 +105,11 @@ public class DefaultRouterTemplate implements IRouterTemplate<IEventMessage<Even
 		this.recoveryStrategy = recoveryStrategy;
 	}
 
-	@Override
-	public RecoveryIntervalStrategy getRecoveryIntervalStrategy() {
-		return this.recoveryIntervalStrategy;
-	}
+    public RecoveryIntervalStrategy getRecoveryIntervalStrategy() {
+        return recoveryIntervalStrategy;
+    }
 
-	public void setRecoveryIntervalStrategy(RecoveryIntervalStrategy recoveryIntervalStrategy) {
+    public void setRecoveryIntervalStrategy(RecoveryIntervalStrategy recoveryIntervalStrategy) {
 		this.recoveryIntervalStrategy = recoveryIntervalStrategy;
 	}
 
@@ -139,8 +134,7 @@ public class DefaultRouterTemplate implements IRouterTemplate<IEventMessage<Even
 		String str = this.period;
 		Map<DRParam, Object> map = new HashMap<>();
 		map.put(DRParam.PERIOD, str);
-		map.put(DRParam.TYPE, TaskType.ROUTER);
-		this.recoveryTaskHandler.registerTask(this, map);
+		this.recoveryTaskHandler.registerTask(TaskType.ROUTER, map);
 	}
 
 	@Override
@@ -176,15 +170,13 @@ public class DefaultRouterTemplate implements IRouterTemplate<IEventMessage<Even
 		this.period = period;
 	}
 
-	@Override
-	public Boolean getLock() {
-		return lock.get();
-	}
+	public boolean lock() {
+	    return this.lock.compareAndSet(false,true);
+    }
 
-	@Override
-	public void setLock(boolean isLock) {
-		this.lock.set(isLock);
-	}
+    public boolean unlock() {
+        return this.lock.compareAndSet(true,false);
+    }
 
 	@Override
 	public void afterPropertiesSet() {
@@ -197,9 +189,26 @@ public class DefaultRouterTemplate implements IRouterTemplate<IEventMessage<Even
 			throw new IllegalArgumentException("RouterTemplate未设置默认路由");
 		}
 
-
 		if (this.recoveryStrategy == null || this.recoveryIntervalStrategy == null) {
 			throw new IllegalArgumentException("RouterTemplate未设置路由恢复策略");
 		}
 	}
+
+    @PostConstruct
+    public void invokeRecovery() {
+
+        Thread t = new Thread(() -> {
+            log.info("动态路由恢复队列线程已就绪");
+            while (true) {
+                RecoveryTask recoveryTask;
+                try {
+                    recoveryTask = this.queue.take();
+                    invokeRecovery(recoveryTask.getType());
+                } catch (InterruptedException e) {
+                    log.error("从恢复队列中获取任务异常", e);
+                }
+            }
+        });
+        t.start();
+    }
 }

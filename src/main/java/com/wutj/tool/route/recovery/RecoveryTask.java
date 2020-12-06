@@ -1,11 +1,10 @@
 package com.wutj.tool.route.recovery;
 
-import com.wutj.tool.route.IRouterTemplate;
-import com.wutj.tool.route.constant.EventMsgType;
-import com.wutj.tool.route.consumer.IEventMessage;
-import com.wutj.tool.route.model.IRouter;
 import org.springframework.lang.NonNull;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.StringJoiner;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
@@ -26,12 +25,6 @@ public class RecoveryTask implements Delayed {
 	 * 触发的时间,单位毫秒
 	 */
 	private long time;
-
-	/**
-	 * 需要执行恢复任务的路由模板
-	 */
-	private IRouterTemplate<IEventMessage<EventMsgType>, IRouter> template;
-
 
 	@Override
 	public long getDelay(@NonNull TimeUnit unit) {
@@ -66,19 +59,11 @@ public class RecoveryTask implements Delayed {
 		this.time = time;
 	}
 
-	public IRouterTemplate<IEventMessage<EventMsgType>, IRouter> getTemplate() {
-		return template;
-	}
-
-	public void setTemplate(IRouterTemplate<IEventMessage<EventMsgType>, IRouter> template) {
-		this.template = template;
-	}
-
-	@Override
-	public String toString() {
-		return new StringJoiner(", ", RecoveryTask.class.getSimpleName() + "[", "]")
-				.add("time=" + time)
-				.add("template=" + template)
-				.toString();
-	}
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", RecoveryTask.class.getSimpleName() + "[", "]")
+                .add("type=" + this.type.name())
+                .add("time=" + LocalDateTime.ofInstant(Instant.ofEpochMilli(this.time), ZoneId.systemDefault()))
+                .toString();
+    }
 }

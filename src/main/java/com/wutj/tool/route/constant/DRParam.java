@@ -8,27 +8,12 @@ package com.wutj.tool.route.constant;
 public enum DRParam {
 
 	/**
-	 * 事件触发类型，
-	 */
-	TYPE,
-
-	/**
-	 * 模板锁定时间
-	 */
-	LOCKTIME,
-
-	/**
-	 * 任务类型：解锁模板
-	 */
-	UNLOCK,
-
-	/**
-	 * 任务类型：恢复路由
-	 */
-	ROUTER,
-
-	/**
 	 * 路由恢复时间
 	 */
-	PERIOD
+	PERIOD,
+
+    /**
+     * 恢复间隔策略
+     */
+    INTERVAL_STRATEGY
 }

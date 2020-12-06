@@ -1,6 +1,7 @@
-package com.wutj.tool.route;
+package com.wutj.tool.route.listener;
 
-import com.wutj.tool.route.consumer.IEventMessage;
+import com.wutj.tool.route.consumer.EventMessage;
+import com.wutj.tool.route.decider.AbstractDecider;
 import com.wutj.tool.route.model.IRouter;
 
 /**
@@ -18,7 +19,7 @@ public class RouterContext {
 	/**
 	 * 触发信息
 	 */
-	private IEventMessage msg;
+	private EventMessage msg;
 
 	/**
 	 * 当前路由
@@ -38,11 +39,11 @@ public class RouterContext {
 		this.decider = decider;
 	}
 
-	public IEventMessage getMsg() {
+	public EventMessage getMsg() {
 		return msg;
 	}
 
-	public void setMsg(IEventMessage msg) {
+	public void setMsg(EventMessage msg) {
 		this.msg = msg;
 	}
 

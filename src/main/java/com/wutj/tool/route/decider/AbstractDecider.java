@@ -1,9 +1,11 @@
-package com.wutj.tool.route;
+package com.wutj.tool.route.decider;
 
+import com.wutj.tool.route.IRouterTemplate;
 import com.wutj.tool.route.constant.EventMsgType;
-import com.wutj.tool.route.consumer.IEventMessage;
+import com.wutj.tool.route.consumer.EventMessage;
 import com.wutj.tool.route.consumer.IQueueContainer;
 import com.wutj.tool.route.listener.IDeciderListener;
+import com.wutj.tool.route.listener.RouterContext;
 import com.wutj.tool.route.model.IRouter;
 import com.wutj.tool.route.strategy.RouterStrategy;
 import com.wutj.tool.route.util.BeanUtil;
@@ -19,7 +21,7 @@ import java.util.concurrent.ArrayBlockingQueue;
  *
  * @author wutingjia
  */
-public abstract class AbstractDecider<T> implements IDecider<IEventMessage<T>, IRouter> {
+public abstract class AbstractDecider implements IDecider {
 
 	private static final Logger log = LoggerFactory.getLogger(AbstractDecider.class);
 
@@ -28,42 +30,37 @@ public abstract class AbstractDecider<T> implements IDecider<IEventMessage<T>, I
 	/**
 	 * 选择器名字
 	 */
-	protected String name;
+	private final String name;
 
 	/**
 	 * 是否启用该选择器
 	 */
-	protected boolean enable = true;
+    private boolean enable = true;
 
 	/**
 	 * 这个decider中可选的路由
 	 */
-	protected List<IRouter> routers = new LinkedList<>();
+    private List<IRouter> routers = new LinkedList<>();
 
 	/**
 	 * 监听器
 	 */
-	protected List<IDeciderListener> listeners = new ArrayList<>();
+    private List<IDeciderListener> listeners = new ArrayList<>();
 
 	/**
 	 * 路由策略，默认为线性
 	 */
-	protected RouterStrategy strategy = RouterStrategy.LINEAR;
+    private RouterStrategy strategy = RouterStrategy.LINEAR;
 
 	/**
-	 * 监听的事件类型
+	 * 消息事件队列
 	 */
-	protected T listenType;
+	private final ArrayBlockingQueue<EventMessage> queue;
 
-	/**
-	n * 消息事件队列
-	 */
-	private final ArrayBlockingQueue<IEventMessage<T>> queue;
+	private final IRouterTemplate template;
 
-	private final IRouterTemplate<IEventMessage<EventMsgType>, IRouter> template;
-
-	public AbstractDecider(T listenType, IQueueContainer<T> container) {
-		this.listenType = listenType;
+	public AbstractDecider(String name, EventMsgType listenType, IQueueContainer container) {
+	    this.name = name;
 		this.queue = container.getQueueByType(listenType);
 		this.template = BeanUtil.getTemplate();
 	}
@@ -73,7 +70,7 @@ public abstract class AbstractDecider<T> implements IDecider<IEventMessage<T>, I
 		Thread thread = new Thread(() -> {
 			try {
 				while (true) {
-					IEventMessage<T> msg = queue.take();
+                    EventMessage msg = queue.take();
 					template.invokeSwitch(decide(msg), msg.getRouter());
 				}
 			} catch (InterruptedException e) {
@@ -89,12 +86,17 @@ public abstract class AbstractDecider<T> implements IDecider<IEventMessage<T>, I
 	 * @return 切换为的路由
 	 */
 	@Override
-	public IRouter decide(IEventMessage<T> msg) {
+	public IRouter decide(EventMessage msg) {
 
 		if (!allowSwitch(msg)) {
 			log.info("因allowSwitch限制不允许限制");
 			return null;
 		}
+
+		if (!this.enable) {
+		    log.info("decider:" + this.name + "已被禁用,忽略消息" + msg.toString());
+		    return null;
+        }
 
 		int index = routers.indexOf(msg.getRouter());
 
@@ -129,73 +131,48 @@ public abstract class AbstractDecider<T> implements IDecider<IEventMessage<T>, I
 	 * @param msg 触发信息
 	 * @return 切换的路由，如果为null代表不切换
 	 */
-	protected abstract IRouter doDecide(IEventMessage<T> msg);
-
-	@Override
-	public RouterStrategy getRouterStrategy() {
-		return strategy;
-	}
+	protected abstract IRouter doDecide(EventMessage msg);
 
 	/**
 	 * 切换时的额外限制条件
 	 * @param msg 触发信息
 	 * @return true 允许，false不允许
 	 */
-	@Override
-	public abstract boolean allowSwitch(IEventMessage<T> msg);
+	public abstract boolean allowSwitch(EventMessage msg);
 
-	@Override
-	public boolean isEnable() {
-		return enable;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public void setEnable(boolean enable) {
-		this.enable = enable;
-	}
+    public boolean isEnable() {
+        return enable;
+    }
 
-	/**
-	 * 添加Decider的监听器.
-	 */
-	public void addListener(IDeciderListener listener){
-		this.listeners.add(listener);
-	}
+    public void setEnable(boolean enable) {
+        this.enable = enable;
+    }
 
-	public List<IDeciderListener> getListeners() {
-		return listeners;
-	}
+    public List<IRouter> getRouters() {
+        return routers;
+    }
 
-	public void setListeners(List<IDeciderListener> listeners) {
-		this.listeners = listeners;
-	}
+    public void setRouters(List<IRouter> routers) {
+        this.routers = routers;
+    }
 
-	@Override
-	public String getName() {
-		return this.name;
-	}
+    public void setListeners(List<IDeciderListener> listeners) {
+        this.listeners = listeners;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public RouterStrategy getStrategy() {
+        return strategy;
+    }
 
-	@Override
-	public List<IRouter> getRouters() {
-		return routers;
-	}
+    public void setStrategy(RouterStrategy strategy) {
+        this.strategy = strategy;
+    }
 
-	@Override
-	public void setRouters(List<IRouter> IRouters) {
-		this.routers = IRouters;
-	}
-
-	public RouterStrategy getStrategy() {
-		return strategy;
-	}
-
-	public void setStrategy(RouterStrategy strategy) {
-		this.strategy = strategy;
-	}
-
-	private void notifyBeforeListener(AbstractDecider<T> decider, IEventMessage<T> msg) {
+    private void notifyBeforeListener(AbstractDecider decider, EventMessage msg) {
 		RouterContext context = new RouterContext();
 		context.setDecider(decider);
 		context.setMsg(msg);
@@ -204,7 +181,7 @@ public abstract class AbstractDecider<T> implements IDecider<IEventMessage<T>, I
 		}
 	}
 
-	private void notifyAfterListener(AbstractDecider<T> decider, IEventMessage<T> msg, IRouter router) {
+	private void notifyAfterListener(AbstractDecider decider, EventMessage msg, IRouter router) {
 		RouterContext context = new RouterContext();
 		context.setDecider(decider);
 		context.setMsg(msg);
@@ -214,7 +191,7 @@ public abstract class AbstractDecider<T> implements IDecider<IEventMessage<T>, I
 		}
 	}
 
-	private void notifySwitchListener(AbstractDecider<T> decider, IEventMessage<T> msg, IRouter router) {
+	private void notifySwitchListener(AbstractDecider decider, EventMessage msg, IRouter router) {
 		RouterContext context = new RouterContext();
 		context.setDecider(decider);
 		context.setMsg(msg);
@@ -228,12 +205,12 @@ public abstract class AbstractDecider<T> implements IDecider<IEventMessage<T>, I
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
-		AbstractDecider<T> decider = (AbstractDecider<T>) o;
-		return name.equals(decider.name);
+		AbstractDecider decider = (AbstractDecider) o;
+		return this.name.equals(decider.name);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(name);
+		return Objects.hash(this.name);
 	}
 }

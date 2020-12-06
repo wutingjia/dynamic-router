@@ -1,9 +1,6 @@
 package com.wutj.tool.route.recovery;
 
-import com.wutj.tool.route.IRouterTemplate;
 import com.wutj.tool.route.constant.DRParam;
-import com.wutj.tool.route.consumer.IEventMessage;
-import com.wutj.tool.route.model.IRouter;
 
 import java.util.Map;
 
@@ -12,16 +9,12 @@ import java.util.Map;
  *
  * @author wutingjia
  */
-public interface IRecoveryTaskHandler<T> {
+public interface IRecoveryTaskHandler {
 
-	/**
-	 * 注册恢复任务
-	 * @param template 路由模板
-	 */
-	void registerTask(IRouterTemplate<IEventMessage<T>, IRouter> template, Map<DRParam, Object> param);
+    /**
+     * 注册恢复任务
+     * @param param
+     */
+	void registerTask(TaskType type, Map<DRParam, Object> param);
 
-	/**
-	 * 触发恢复任务
-	 */
-	void invokeRecovery();
 }
